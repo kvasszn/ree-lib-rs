@@ -14,6 +14,8 @@ pub enum FileReadError {
     IO(#[from] std::io::Error),
     #[error("RSZ parsing failed: {0}")]
     Rsz(#[from] crate::rsz::error::RszError),
+    #[error("Unknown File Type: {0}")]
+    UnknownFileType(String),
 }
 
 pub type Result<T> = std::result::Result<T, FileReadError>;

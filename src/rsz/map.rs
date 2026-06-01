@@ -35,10 +35,10 @@ impl RszMap {
 
     pub fn get_field_path(&self, start_type: &str, path: &str) -> Option<&FieldInfo> {
         let mut current_type = self.get_type(start_type)?;
-        let parts: Vec<&str> = path.split('.').collect();
-        for (i, part) in parts.iter().enumerate() {
+        let mut parts = path.split('.').peekable();
+        while let Some(part) = parts.next() {
             let field = current_type.get_field(part)?;
-            if i == parts.len() - 1 {
+            if parts.peek().is_none() {
                 return Some(field);
             }
             current_type = self.get_type(&field.original_type)?;
