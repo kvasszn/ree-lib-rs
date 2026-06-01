@@ -9,6 +9,8 @@ pub enum DeserializeError {
     HashNotFound(u32),
     #[error("Unhandled Field Type {} in {}.{}", .0.r#type, .1.name, .0.name)]
     UnhandledFieldType(FieldInfo, TypeInfo),
+    #[error("Unknown or unsupported type {0}")]
+    UnknownType(String),
     #[error("IO error: {0}")]
     IO(#[from] std::io::Error),
 }

@@ -95,6 +95,15 @@ impl<'a> Serialize for ValueView<'a> {
                             instance, 
                             ctx: self.ctx
                         };
+
+                        if let Some(inner_value) = view.get_serializable_enum_value() {
+                            let inner_view = ValueView {
+                                value: inner_value,
+                                field_info: self.field_info,
+                                ctx: self.ctx
+                            };
+                            return inner_view.serialize(serializer)
+                        }
                         view.serialize(serializer)
                     } else {
                         serializer.serialize_none()

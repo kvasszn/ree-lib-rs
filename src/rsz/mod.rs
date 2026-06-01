@@ -12,13 +12,22 @@ use bytemuck::{Pod, Zeroable};
 use serde::{Deserialize, Serialize};
 use half::f16;
 
-use crate::{enums::{EnumMap, EnumValue}, rsz::{error::{Result, RszError}, rsz_type::RszType}, types::*, util::{read_pod, read_pod_vec}};
+use crate::{enums::{EnumMap, EnumValue}, rsz::{deserializer::RszDeserializer, error::{Result, RszError}, rsz_type::RszType}, types::*, util::{read_pod, read_pod_vec}};
 
 #[derive(Debug, Clone)]
 pub struct Rsz {
     pub roots: Vec<u32>,
     pub instances: Vec<Instance>,
     pub externs: HashMap<u32, Extern>,
+}
+
+impl Rsz {
+    pub fn read<R: Read + Seek>(r: &mut R, rsz_map: &RszMap) -> Result<Self> {
+        let info = RszInfo::read(r)?;
+        let mut deserializer = RszDeserializer::from_rsz_info(r, &info, rsz_map);
+        let rsz = deserializer.deserialize()?;
+        Ok(rsz)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +40,16 @@ pub struct RszContext<'a> {
     pub rsz: &'a Rsz,
     pub type_map: &'a RszMap,
     pub enum_map: &'a EnumMap,
+}
+
+impl<'a> RszContext<'a> {
+    pub fn new(rsz: &'a Rsz, type_map: &'a RszMap, enum_map: &'a EnumMap) -> Self {
+        Self {
+            rsz,
+            type_map,
+            enum_map
+        }
+    }
 }
 
 pub struct InstanceView<'a> {
@@ -64,6 +83,14 @@ impl<'a> InstanceView<'a> {
             map: self.map,
         })
     }*/
+
+    pub fn get_serializable_enum_value(&self) -> Option<&'a Value> {
+        let type_info = self.get_type_info()?;
+        if type_info.name.ends_with("_Serializable") {
+            return self.get("_Value");
+        }
+        None
+    }
 }
 
 pub struct ValueView<'a> {
@@ -72,7 +99,7 @@ pub struct ValueView<'a> {
     pub ctx: &'a RszContext<'a>,
 }
 
-impl<'a> ValueView<'a> {
+/*impl<'a> ValueView<'a> {
     fn get_enum_name(&self, value: EnumValue) -> Option<&String> {
         let original_type = self.field_info.original_type.as_str();
 
@@ -83,6 +110,66 @@ impl<'a> ValueView<'a> {
 
         let enum_def = self.ctx.enum_map.get(base_name)?;
         enum_def.get_name(value)
+    }
+}*/
+
+impl<'a> ValueView<'a> {
+    pub fn get_enum_name(&self, value: crate::enums::EnumValue) -> Option<String> {
+        let original_type = self.field_info.original_type.as_str();
+
+        let no_array = match original_type.find('[') {
+            Some(idx) => &original_type[..idx],
+            None => original_type,
+        };
+
+        let base_name = no_array
+            .strip_suffix("_Serializable")
+            .or_else(|| no_array.strip_suffix("_Fixed"))
+            .unwrap_or(no_array);
+
+        let fixed_name = format!("{}_Fixed", base_name);
+        let enum_def = self.ctx.enum_map.get(&fixed_name)
+            .or_else(|| self.ctx.enum_map.get(base_name))
+            .or_else(|| self.ctx.enum_map.get(no_array))?;
+
+        let is_bit_type = base_name.ends_with("Bit");
+
+        if !is_bit_type {
+            if let Some(exact_name) = enum_def.get_name(value) {
+                return Some(exact_name.clone());
+            }
+        }
+
+        let enum_val = value.as_u64();
+
+        if enum_val == 0 {
+            if let Some(zero_name) = enum_def.get_name(crate::enums::EnumValue::Unsigned(0))
+                .or_else(|| enum_def.get_name(crate::enums::EnumValue::Signed(0))) 
+            {
+                return Some(zero_name.clone());
+            }
+            return None;
+        }
+
+        let mut flags = Vec::new();
+        for i in 0..64 {
+            let mask = 1u64 << i;
+            if (enum_val & mask) != 0 {
+                if let Some(bit_name) = enum_def.get_name(crate::enums::EnumValue::Unsigned(mask))
+                    .or_else(|| enum_def.get_name(crate::enums::EnumValue::Signed(mask as i64))) 
+                {
+                    if !flags.contains(bit_name) {
+                        flags.push(bit_name.clone());
+                    }
+                }
+            }
+        }
+
+        if !flags.is_empty() {
+            return Some(flags.join(" | "));
+        }
+
+        None
     }
 }
 

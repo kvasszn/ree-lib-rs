@@ -1,9 +1,9 @@
-use std::{collections::HashMap, error::Error, io::{Read, Seek}};
+use std::{collections::HashMap, io::{Read, Seek}};
 
 use byteorder::{LE, ReadBytesExt};
 use half::f16;
 
-use crate::{rsz::{Extern, FieldInfo, Instance, Rsz, RszInfo, RszMap, TypeDescriptor, TypeInfo, Value, rsz_type::RszType}, util::{ReadStringExt, seek_align_up}};
+use crate::{rsz::{Extern, FieldInfo, Instance, Rsz, RszInfo, RszMap, TypeDescriptor, TypeInfo, Value, error::DeserializeError, rsz_type::RszType}, util::{ReadStringExt, seek_align_up}};
 use crate::types::*;
 
 
@@ -25,7 +25,7 @@ macro_rules! match_rsz_types {
             $(
                 $pat => $expr,
             )*
-            _ => return Err(format!("Unknown or unsupported type: {}", $type_str).into()),
+            _ => return Err(DeserializeError::UnknownType($type_str.to_string())),
         }
     };
 }
@@ -45,11 +45,12 @@ impl<'a, R: Read + Seek> RszDeserializer<'a, R> {
         }
     }
 
-    pub fn deserialize(&mut self) -> Result<Rsz, Box<dyn Error>> {
+    pub fn deserialize(&mut self) -> Result<Rsz, DeserializeError> {
         let mut instances: Vec<Instance> = Vec::new();
         let mut externs = HashMap::new();
         for (i, TypeDescriptor {hash, ..}) in self.info.type_descriptors.iter().enumerate() {
-            let type_info = self.rsz_map.get_by_hash(*hash).ok_or("hash not found in type map")?;
+            let type_info = self.rsz_map.get_by_hash(*hash)
+                .ok_or(DeserializeError::HashNotFound(*hash))?;
             log::debug!("class: {}", type_info.name);
             
             if let Some(extern_slot) = self.info.extern_slots.get(&(i as u32)) {
@@ -77,7 +78,7 @@ impl<'a, R: Read + Seek> RszDeserializer<'a, R> {
     }
 
 
-    fn deserialize_field(&mut self, field: &FieldInfo, parent: &TypeInfo) -> Result<Value, Box<dyn Error>> {
+    fn deserialize_field(&mut self, field: &FieldInfo, parent: &TypeInfo) -> Result<Value, DeserializeError> {
         let value = if field.array {
             seek_align_up(&mut self.data, 4)?;
             let len = self.data.read_u32::<LE>()?;
@@ -97,7 +98,7 @@ impl<'a, R: Read + Seek> RszDeserializer<'a, R> {
     }
 
 
-    fn deserialize_field_single(&mut self, field: &FieldInfo, _parent: &TypeInfo) -> Result<Value, Box<dyn Error>> {
+    fn deserialize_field_single(&mut self, field: &FieldInfo, _parent: &TypeInfo) -> Result<Value, DeserializeError> {
         let value = match_rsz_types!(
             field.r#type.as_str(),
             &mut self.data,
