@@ -1,5 +1,5 @@
 # Rust bindings for reframework
-This library provides "safe" rust bindings for [reframework](https://github.com/praydog/REFramework).
+This library provides "safe" rust bindings for [reframework](https://github.com/praydog/REFramework). (currently mainly just for `sdk`)
 
 It should be pretty similar to using lua or c++ (I haven't really messed with ref in c++ though).
 
@@ -7,12 +7,12 @@ Most functions bindings also end up returning an `Option<T>`, so you can use the
 
 I also provide an implementation for `Logger` from the `log` crate, so you can use `log::info!` etc. These functions output to a specified log file and reframework's log.
 
-A template plugin is available [here](https://github.com/kvasszn/ree-lib-rs/ref-template-plugin).
+A template plugin is available [here](https://github.com/kvasszn/ree-lib-rs/tree/main/ref-template-plugin).
 
 ## Building
-Copy the template.
+Copy the template and the build.
 ```sh
-cargo build ref-plugin-template --target x86_64-pc-windows-msvc --release 
+cargo build -p ref-plugin-template --target x86_64-pc-windows-msvc --release 
 ```
 
 On linux, i use cargo-xwin to build.
@@ -21,10 +21,11 @@ cargo xwin build -p ref-plugin-template --target x86_64-pc-windows-msvc --releas
 ```
 
 ## TODO
-- [] Add `Result<T, REFrameworkError>` for some returns
-- [] Add il2cpp codegen with procmacros
+- [ ] there's a decent amount of stuff missing, i.e some structs
+- [ ] Add `Result<T, REFrameworkError>` for some returns
+- [ ] Add il2cpp codegen with procmacros
     - to make this useful, requires casting pointers to objects to their real types ig or something like that
-- [] Add imgui bindings
-- [] maybe add lua stuff? not sure what the use case would be.
-- [] nice tooling things idk
-
+- [ ] Add imgui bindings
+- [ ] maybe add lua stuff? not sure what the use case would be.
+- [ ] impl traits like `Display` for `TypeDefinition`, `Method`, etc
+- [ ] nice tooling things and helpers idk

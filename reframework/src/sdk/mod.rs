@@ -33,7 +33,7 @@ impl_free_fns! {
     typeof_raw = pub fn typeof_(type_name: *const c_char) -> REFrameworkManagedObjectHandle => ManagedObject;
 }
 
-pub fn type_of(type_name: &str) -> Option<ManagedObject> {
+pub fn typeof_(type_name: &str) -> Option<ManagedObject> {
     with_cstrings!(type_name; typeof_raw(type_name))
 }
 

@@ -1,4 +1,5 @@
 pub mod ref_log;
+pub mod prelude;
 pub mod sdk;
 
 #[allow(non_upper_case_globals)]
@@ -14,6 +15,19 @@ pub use ref_log::*;
 
 use std::sync::OnceLock;
 use std::{ffi::{CString, c_int, c_ushort, c_char, c_uchar, c_void, c_uint, c_ulonglong, CStr}};
+
+pub static PLUGIN_NAME: OnceLock<&'static str> = OnceLock::new();
+
+#[macro_export]
+macro_rules! initialize_logging {
+    () => {
+        $crate::ref_log::initialize_logging(env!("CARGO_PKG_NAME"))
+    };
+    ($name:expr) => {
+        let _ = PLUGIN_NAME.set(plugin_name);
+        $crate::ref_log::initialize_logging($name)
+    };
+}
 
 static REF_API: OnceLock<Api> = OnceLock::new();
 
@@ -296,14 +310,24 @@ fn log_internal(msg: &str, func_ptr: Option<unsafe extern "C" fn(*const std::os:
     unsafe { func(c_msg.as_ptr(), ""); }
 }
 
+
 pub fn log_info(msg: &str) {
-    log_internal(msg, Api::get().functions.log_info)
+    match Api::try_get() {
+        Some(api) => log_internal(msg, api.functions.log_info),
+        None => log_to_file!("[INFO] {}", msg),
+    }
 }
 
 pub fn log_warn(msg: &str) {
-    log_internal(msg, Api::get().functions.log_warn)
+    match Api::try_get() {
+        Some(api) => log_internal(msg, api.functions.log_warn),
+        None => log_to_file!("[WARN] {}", msg),
+    }
 }
 
 pub fn log_error(msg: &str) {
-    log_internal(msg, Api::get().functions.log_error)
+    match Api::try_get() {
+        Some(api) => log_internal(msg, api.functions.log_error),
+        None => log_to_file!("[ERROR] {}", msg),
+    }
 }

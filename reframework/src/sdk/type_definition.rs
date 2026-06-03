@@ -67,6 +67,7 @@ impl TypeDefinition {
         with_cstrings!(name; self.find_property_raw(name))
     }
 
+    // lwk kinda scuffed but its chill
     pub fn get_full_name(&self) -> Option<String> {
         let mut buf = vec![0u8; 512];
         let mut len: c_uint = 0;

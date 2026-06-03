@@ -1,5 +1,5 @@
 use crate::*;
-use log::{Level, Metadata, Record, LevelFilter};
+use log::{Level, Metadata, Record};
 
 static PLUGIN_LOGGER: REFrameworkLogger = REFrameworkLogger;
 
@@ -8,10 +8,11 @@ use std::io::Write;
 use std::sync::{LazyLock, Mutex};
 
 pub static LOG_FILE: LazyLock<Mutex<File>> = LazyLock::new(|| {
+    let name = PLUGIN_NAME.get().copied().unwrap_or("plugin");
     let file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open("ree_plugin.log")
+        .open(format!("{}.log", name))
         .expect("Failed to open log file");
     Mutex::new(file)
 });
@@ -44,7 +45,8 @@ impl log::Log for REFrameworkLogger {
             return;
         }
 
-        let msg = format!("[{}] {}", record.level(), record.args());
+        let name = crate::PLUGIN_NAME.get().copied().unwrap_or("plugin");
+        let msg = format!("[{}] [{}] {}", name, record.level(), record.args());
         let target = record.target();
 
         if target != "ref_only" {
@@ -69,9 +71,10 @@ impl log::Log for REFrameworkLogger {
     }
 }
 
-pub fn initialize_logging() {
-    log::set_logger(&PLUGIN_LOGGER)
-        .map(|()| log::set_max_level(LevelFilter::Debug))
+pub fn initialize_logging(plugin_name: &'static str) {
+    let _ = crate::PLUGIN_NAME.set(plugin_name);
+    log::set_logger(&ref_log::PLUGIN_LOGGER)
+        .map(|()| log::set_max_level(log::LevelFilter::Debug))
         .inspect_err(|e| log_to_file!("Failed to initialize standard logger {e}"))
         .expect("Failed to initialize standard logger");
 
