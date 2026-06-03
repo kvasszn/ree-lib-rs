@@ -1,13 +1,15 @@
 [package]
-name = "ree-plugin"
+name = "reframework-rs"
 version = "0.1.0"
 edition = "2024"
 
 [lib]
-crate-type = ["cdylib"]
+name = "reframework"
+crate-type = ["rlib"]
 
 [build-dependencies]
 bindgen = "0.72.1"
 
 [dependencies]
+log = "0.4.30"
 ree-lib = { path = "../" }

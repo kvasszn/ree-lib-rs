@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = [".", "ree-plugin"]
+members = [".", "reframework", "ref-plugin-template"]
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [[bin]]
 name = "file_dumper"

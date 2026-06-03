@@ -446,10 +446,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "ree-plugin"
+name = "ref-plugin-template"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "reframework-rs",
+]
+
+[[package]]
+name = "reframework-rs"
 version = "0.1.0"
 dependencies = [
  "bindgen",
+ "log",
  "ree-lib",
 ]
 
