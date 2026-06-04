@@ -1,6 +1,7 @@
 pub mod ref_log;
 pub mod prelude;
 pub mod sdk;
+use imgui_sys as imgui_sys;
 
 #[allow(non_upper_case_globals)]
 #[allow(non_camel_case_types)]
@@ -8,6 +9,9 @@ pub mod sdk;
 #[allow(dead_code)]
 pub mod sys {
     include!(concat!(env!("OUT_DIR"), "/reframework_bindings.rs"));
+    /*pub mod imgui {
+        include!(concat!(env!("OUT_DIR"), "/imgui_bindings.rs"));
+    }*/
 }
 pub use sys::*;
 
@@ -329,5 +333,88 @@ pub fn log_error(msg: &str) {
     match Api::try_get() {
         Some(api) => log_internal(msg, api.functions.log_error),
         None => log_to_file!("[ERROR] {}", msg),
+    }
+}
+
+pub unsafe extern "C" fn rust_on_imgui_draw_ui(data: *mut REFImGuiFrameCbData) {
+    unsafe {
+        //log::info!("here");
+        if data.is_null() { return; }
+        let data = &*data;
+
+        //log::info!("here2");
+        imgui_sys::igSetCurrentContext(data.context as *mut imgui_sys::ImGuiContext);
+
+        let alloc_fn: imgui_sys::ImGuiMemAllocFunc = std::mem::transmute(data.malloc_fn);
+        let free_fn: imgui_sys::ImGuiMemFreeFunc = std::mem::transmute(data.free_fn);
+
+        imgui_sys::igSetAllocatorFunctions(alloc_fn, free_fn, data.user_data);
+        //log::info!("here3");
+        imgui_sys::igText(c"Hello from Rust!".as_ptr());
+        imgui_sys::igShowDemoWindow(&mut true)
+        //draw_ui();
+        //let folder_name = CString::new("My Rust Plugin").unwrap();
+        //imgui_sys::igText(folder_name.as_ptr());
+        //log::info!("here4");
+    }
+}
+
+pub unsafe extern "C" fn rust_on_imgui_frame(data: *mut REFImGuiFrameCbData) {
+    unsafe {
+        if data.is_null() { return; }
+        let data = &*data;
+
+        imgui_sys::igSetCurrentContext(data.context as *mut imgui_sys::ImGuiContext);
+
+        let alloc_fn: imgui_sys::ImGuiMemAllocFunc = std::mem::transmute(data.malloc_fn);
+        let free_fn: imgui_sys::ImGuiMemFreeFunc = std::mem::transmute(data.free_fn);
+
+        imgui_sys::igSetAllocatorFunctions(alloc_fn, free_fn, data.user_data);
+        let mut is_open = true;
+        /*imgui_sys::igBegin(
+            c"Rust REFramework Plugin".as_ptr(),
+            &mut is_open,
+            imgui_sys::ImGuiWindowFlags_None as i32,
+        );
+
+
+        draw_ui();
+        imgui_sys::igEnd();*/
+    }
+}
+
+
+fn draw_ui() {
+    /*unsafe {
+    // 1. Use the generic Library::new() so the types match
+    let lib = libloading::Library::new("dinput8.dll").expect("Failed to load dinput8.dll");
+    
+    // 2. Use b"symbol_name\0" (byte slice) instead of c"symbol_name".as_ptr()
+    let igBegin: libloading::Symbol<unsafe extern "C" fn(*const i8, *mut bool, i32) -> bool> = 
+        lib.get(b"igBegin\0").expect("Failed to find igBegin");
+        
+    let igText: libloading::Symbol<unsafe extern "C" fn(*const i8)> = 
+        lib.get(b"igText\0").expect("Failed to find igText");
+
+    // 3. Call them safely!
+    let mut is_open = true;
+    
+    // Note: We still use c"..." for the actual ImGui arguments because 
+    // the C-API expects standard null-terminated char pointers here!
+    igBegin(c"Rust Plugin".as_ptr(), &mut is_open, 0);
+    igText(c"No more ABI crashes!".as_ptr());
+    
+    // Don't forget to end the window!
+    let igEnd: libloading::Symbol<unsafe extern "C" fn()> = lib.get(b"igEnd\0").unwrap();
+    igEnd();
+    }*/
+    unsafe {
+        /*imgui_sys::igText(c"Hello from raw imgui-sys!".as_ptr());
+
+        let button_size = imgui_sys::ImVec2 { x: 0.0, y: 0.0 };
+        if imgui_sys::igButton(c"Click Me".as_ptr(), button_size) {
+            crate::log_info("Button was clicked inside ImGui!");
+        }*/
+
     }
 }
