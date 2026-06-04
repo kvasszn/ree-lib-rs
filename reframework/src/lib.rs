@@ -1,7 +1,6 @@
 pub mod ref_log;
 pub mod prelude;
 pub mod sdk;
-use imgui_sys as imgui_sys;
 
 #[allow(non_upper_case_globals)]
 #[allow(non_camel_case_types)]
@@ -9,9 +8,6 @@ use imgui_sys as imgui_sys;
 #[allow(dead_code)]
 pub mod sys {
     include!(concat!(env!("OUT_DIR"), "/reframework_bindings.rs"));
-    /*pub mod imgui {
-        include!(concat!(env!("OUT_DIR"), "/imgui_bindings.rs"));
-    }*/
 }
 pub use sys::*;
 
@@ -35,16 +31,17 @@ macro_rules! initialize_logging {
 
 static REF_API: OnceLock<Api> = OnceLock::new();
 
+#[derive(Debug)]
 pub struct Api {
     pub reframework_module: *mut c_void,
     //version: &'static REFrameworkPluginVersion,
     //functions: &'static REFrameworkPluginFunctions,
     //renderer_data: &'static REFrameworkRendererData,
     //sdk: &'static REFrameworkSDKData,
-    version: PluginVersion,
-    functions: &'static REFrameworkPluginFunctions,
-    renderer_data: &'static REFrameworkRendererData,
-    sdk: &'static REFrameworkSDKData,
+    pub version: PluginVersion,
+    pub functions: &'static REFrameworkPluginFunctions,
+    pub renderer_data: &'static REFrameworkRendererData,
+    pub sdk: &'static REFrameworkSDKData,
 }
 
 unsafe impl Send for Api {}
@@ -67,6 +64,7 @@ impl Api {
         };
 
         REF_API.set(api).map_err(|_| "REF API is already intialized")?;
+
         Ok(())
     }
 
@@ -91,10 +89,46 @@ macro_rules! define_wrapper {
         )*
     ) => {
         $(
+            #[derive(Copy, Clone)]
+            #[repr(transparent)]
+            pub struct $wrapper_name(*const $raw_ty);
+            impl $wrapper_name {
+                pub fn from_raw(ptr: *const $raw_ty) -> Option<Self> {
+                    if ptr.is_null() { None } else { Some(Self(ptr)) }
+                }
+                pub fn as_ptr(self) -> *const $raw_ty { self.0 }
+            }
+        )*
+    };
+    (
+        $(
+            $wrapper_name:ident = *mut $raw_ty:ident;
+        )*
+    ) => {
+        $(
+            #[derive(Copy, Clone)]
+            #[repr(transparent)]
+            pub struct $wrapper_name($raw_ty);
+            impl $wrapper_name {
+                pub fn from_raw(ptr: $raw_ty) -> Option<Self> {
+                    if ptr.is_null() { None } else { Some(Self(ptr)) }
+                }
+                pub fn as_ptr(self) -> $raw_ty { self.0 }
+            }
+        )*
+    };
+}
+
+macro_rules! define_wrapper_debug {
+    (
+        $(
+            $wrapper_name:ident = *const $raw_ty:ident;
+        )*
+    ) => {
+        $(
             #[derive(Debug, Copy, Clone)]
             #[repr(transparent)]
             pub struct $wrapper_name(*const $raw_ty);
-
             impl $wrapper_name {
                 pub fn from_raw(ptr: *const $raw_ty) -> Option<Self> {
                     if ptr.is_null() { None } else { Some(Self(ptr)) }
@@ -112,7 +146,6 @@ macro_rules! define_wrapper {
             #[derive(Debug, Copy, Clone)]
             #[repr(transparent)]
             pub struct $wrapper_name($raw_ty);
-
             impl $wrapper_name {
                 pub fn from_raw(ptr: $raw_ty) -> Option<Self> {
                     if ptr.is_null() { None } else { Some(Self(ptr)) }
@@ -123,25 +156,28 @@ macro_rules! define_wrapper {
     };
 }
 
-define_wrapper! {
+define_wrapper_debug! {
     PluginInitializeParam = *const REFrameworkPluginInitializeParam;
     PluginVersion = *const REFrameworkPluginVersion;
     Sdk = *const REFrameworkSDKData;
 }
 
-define_wrapper! {
+define_wrapper_debug! {
+    VMContext           = *mut REFrameworkVMContextHandle;
     Tdb                 = *mut REFrameworkTDBHandle;
+    ResourceManager     = *mut REFrameworkResourceManagerHandle;
+    Resource            = *mut REFrameworkResourceHandle;
+    Property            = *mut REFrameworkPropertyHandle;
+    ReflectionProperty  = *mut REFrameworkReflectionPropertyHandle;
+    ReflectionMethod    = *mut REFrameworkReflectionMethodHandle;
+}
+
+define_wrapper! {
     TypeDefinition      = *mut REFrameworkTypeDefinitionHandle;
     Method              = *mut REFrameworkMethodHandle;
     Field               = *mut REFrameworkFieldHandle;
-    Property            = *mut REFrameworkPropertyHandle;
     ManagedObject       = *mut REFrameworkManagedObjectHandle;
-    ResourceManager     = *mut REFrameworkResourceManagerHandle;
-    Resource            = *mut REFrameworkResourceHandle;
     TypeInfo            = *mut REFrameworkTypeInfoHandle;
-    VMContext           = *mut REFrameworkVMContextHandle;
-    ReflectionProperty  = *mut REFrameworkReflectionPropertyHandle;
-    ReflectionMethod    = *mut REFrameworkReflectionMethodHandle;
     Module              = *mut REFrameworkModuleHandle;
 }
 
@@ -333,88 +369,5 @@ pub fn log_error(msg: &str) {
     match Api::try_get() {
         Some(api) => log_internal(msg, api.functions.log_error),
         None => log_to_file!("[ERROR] {}", msg),
-    }
-}
-
-pub unsafe extern "C" fn rust_on_imgui_draw_ui(data: *mut REFImGuiFrameCbData) {
-    unsafe {
-        //log::info!("here");
-        if data.is_null() { return; }
-        let data = &*data;
-
-        //log::info!("here2");
-        imgui_sys::igSetCurrentContext(data.context as *mut imgui_sys::ImGuiContext);
-
-        let alloc_fn: imgui_sys::ImGuiMemAllocFunc = std::mem::transmute(data.malloc_fn);
-        let free_fn: imgui_sys::ImGuiMemFreeFunc = std::mem::transmute(data.free_fn);
-
-        imgui_sys::igSetAllocatorFunctions(alloc_fn, free_fn, data.user_data);
-        //log::info!("here3");
-        imgui_sys::igText(c"Hello from Rust!".as_ptr());
-        imgui_sys::igShowDemoWindow(&mut true)
-        //draw_ui();
-        //let folder_name = CString::new("My Rust Plugin").unwrap();
-        //imgui_sys::igText(folder_name.as_ptr());
-        //log::info!("here4");
-    }
-}
-
-pub unsafe extern "C" fn rust_on_imgui_frame(data: *mut REFImGuiFrameCbData) {
-    unsafe {
-        if data.is_null() { return; }
-        let data = &*data;
-
-        imgui_sys::igSetCurrentContext(data.context as *mut imgui_sys::ImGuiContext);
-
-        let alloc_fn: imgui_sys::ImGuiMemAllocFunc = std::mem::transmute(data.malloc_fn);
-        let free_fn: imgui_sys::ImGuiMemFreeFunc = std::mem::transmute(data.free_fn);
-
-        imgui_sys::igSetAllocatorFunctions(alloc_fn, free_fn, data.user_data);
-        let mut is_open = true;
-        /*imgui_sys::igBegin(
-            c"Rust REFramework Plugin".as_ptr(),
-            &mut is_open,
-            imgui_sys::ImGuiWindowFlags_None as i32,
-        );
-
-
-        draw_ui();
-        imgui_sys::igEnd();*/
-    }
-}
-
-
-fn draw_ui() {
-    /*unsafe {
-    // 1. Use the generic Library::new() so the types match
-    let lib = libloading::Library::new("dinput8.dll").expect("Failed to load dinput8.dll");
-    
-    // 2. Use b"symbol_name\0" (byte slice) instead of c"symbol_name".as_ptr()
-    let igBegin: libloading::Symbol<unsafe extern "C" fn(*const i8, *mut bool, i32) -> bool> = 
-        lib.get(b"igBegin\0").expect("Failed to find igBegin");
-        
-    let igText: libloading::Symbol<unsafe extern "C" fn(*const i8)> = 
-        lib.get(b"igText\0").expect("Failed to find igText");
-
-    // 3. Call them safely!
-    let mut is_open = true;
-    
-    // Note: We still use c"..." for the actual ImGui arguments because 
-    // the C-API expects standard null-terminated char pointers here!
-    igBegin(c"Rust Plugin".as_ptr(), &mut is_open, 0);
-    igText(c"No more ABI crashes!".as_ptr());
-    
-    // Don't forget to end the window!
-    let igEnd: libloading::Symbol<unsafe extern "C" fn()> = lib.get(b"igEnd\0").unwrap();
-    igEnd();
-    }*/
-    unsafe {
-        /*imgui_sys::igText(c"Hello from raw imgui-sys!".as_ptr());
-
-        let button_size = imgui_sys::ImVec2 { x: 0.0, y: 0.0 };
-        if imgui_sys::igButton(c"Click Me".as_ptr(), button_size) {
-            crate::log_info("Button was clicked inside ImGui!");
-        }*/
-
     }
 }

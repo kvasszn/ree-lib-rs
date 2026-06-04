@@ -31,3 +31,25 @@ impl TypeInfo {
         with_cstrings!(name; self.get_reflection_method_descriptor_raw(name))
     }
 }
+
+impl std::fmt::Display for TypeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.get_name() {
+            Some(name) => write!(f, "{}", name),
+            None => write!(f, "<unknown type info>"),
+        }
+    }
+}
+
+impl std::fmt::Debug for TypeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TypeInfo({}:{} @ {:p})",
+            self.get_type_definition()
+                .and_then(|t| t.get_full_name())
+                .as_deref()
+                .unwrap_or("?"),
+            self.get_name().unwrap_or("?"),
+            self.0
+        )
+    }
+}

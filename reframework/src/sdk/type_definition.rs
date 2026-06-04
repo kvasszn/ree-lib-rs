@@ -76,3 +76,23 @@ impl TypeDefinition {
         String::from_utf8(buf).ok()
     }
 }
+
+impl std::fmt::Display for TypeDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.get_full_name() {
+            Some(name) => write!(f, "{}", name),
+            None => write!(f, "<unknown type definition>"),
+        }
+    }
+}
+
+impl std::fmt::Debug for TypeDefinition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TypeDefinition({} @ {:p})", 
+            self.get_full_name()
+                .as_deref()
+                .unwrap_or("?"),
+            self.0
+        )
+    }
+}

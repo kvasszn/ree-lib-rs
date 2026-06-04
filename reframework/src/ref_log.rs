@@ -46,13 +46,13 @@ impl log::Log for REFrameworkLogger {
         }
 
         let name = crate::PLUGIN_NAME.get().copied().unwrap_or("plugin");
-        let msg = format!("[{}] [{}] {}", name, record.level(), record.args());
+        let local_time = chrono::Local::now();
+        let time = local_time.format("%Y-%m-%d %H:%M:%S");
+        let msg = format!("[{}] [{}] [{}] {}", time, name, record.level(), record.args());
         let target = record.target();
 
-        if target != "ref_only" {
-            if let Ok(mut file) = LOG_FILE.lock() {
-                let _ = writeln!(file, "{}", msg);
-            }
+        if target != "ref_only" && let Ok(mut file) = LOG_FILE.lock() {
+            let _ = writeln!(file, "{}", msg);
         }
 
         if target != "file_only" {
@@ -78,5 +78,5 @@ pub fn initialize_logging(plugin_name: &'static str) {
         .inspect_err(|e| log_to_file!("Failed to initialize standard logger {e}"))
         .expect("Failed to initialize standard logger");
 
-    log::info!("REFramework Rust Logger initialized");
+    log::info!("----- REFramework Rust Logger initialized -----");
 }

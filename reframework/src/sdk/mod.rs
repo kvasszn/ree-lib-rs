@@ -15,7 +15,7 @@ pub mod module;
 use crate::*;
 
 impl_free_fns! {
-    || &*(*Api::get().sdk).functions;
+    || &*(Api::get().sdk.functions);
     pub fn get_tdb() -> REFrameworkTDBHandle => Tdb;
     pub fn get_resource_manager() -> REFrameworkResourceManagerHandle => ResourceManager;
     pub fn get_vm_context() -> REFrameworkVMContextHandle => VMContext;

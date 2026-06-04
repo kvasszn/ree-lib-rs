@@ -24,3 +24,29 @@ impl Method {
         }
     }
 }
+
+impl std::fmt::Display for Method {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.get_name() {
+            Some(name) => write!(f, "{}", name),
+            None => write!(f, "<unknown method>"),
+        }
+    }
+}
+
+impl std::fmt::Debug for Method {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Method({}.{} -> {} @ {:p})",
+            self.get_declaring_type()
+                .and_then(|t| t.get_full_name())
+                .as_deref()
+                .unwrap_or("?"),
+            self.get_name().unwrap_or("?"),
+            self.get_return_type()
+                .and_then(|t| t.get_full_name())
+                .as_deref()
+                .unwrap_or("?"),
+            self.0
+        )
+    }
+}

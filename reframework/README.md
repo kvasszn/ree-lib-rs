@@ -1,5 +1,5 @@
 # Rust bindings for reframework
-This library provides "safe" rust bindings for [reframework](https://github.com/praydog/REFramework). (currently mainly just for `sdk`)
+This library provides "safe" rust bindings for [reframework](https://github.com/praydog/REFramework). Currently mainly just for `sdk`, but also has unsafe `imgui` bindings.
 
 It should be pretty similar to using lua or c++ (I haven't really messed with ref in c++ though).
 
@@ -16,7 +16,7 @@ cargo build -p ref-plugin-template --target x86_64-pc-windows-msvc --release
 ```
 
 On linux, i use cargo-xwin to build.
-```
+```sh
 cargo xwin build -p ref-plugin-template --target x86_64-pc-windows-msvc --release
 ```
 
@@ -25,7 +25,8 @@ cargo xwin build -p ref-plugin-template --target x86_64-pc-windows-msvc --releas
 - [ ] Add `Result<T, REFrameworkError>` for some returns
 - [ ] Add il2cpp codegen with procmacros
     - to make this useful, requires casting pointers to objects to their real types ig or something like that
-- [ ] Add imgui bindings
+- [x] Add imgui bindings
+- [ ] Add egui/other rust ui stuff (would need to make a renderer for dx12, or maybe wgpu witchcraft?? to make it kinda generic?)
 - [ ] maybe add lua stuff? not sure what the use case would be.
-- [ ] impl traits like `Display` for `TypeDefinition`, `Method`, etc
+- [x] impl traits like `Display` for `TypeDefinition`, `Method`, etc
 - [ ] nice tooling things and helpers idk
