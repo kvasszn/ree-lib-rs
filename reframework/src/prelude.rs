@@ -5,4 +5,4 @@ pub use crate::{
     ReflectionMethod, ReflectionProperty,
 };
 pub use crate::{log_to_file, initialize_logging};
-pub use imgui_sys as imgui;
+pub use imgui_sys;

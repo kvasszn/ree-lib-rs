@@ -9,4 +9,6 @@ crate-type = ["cdylib"]
 [dependencies]
 log = "0.4.30"
 reframework-rs = { path = "../reframework/" }
-imgui-sys = { path = "../reframework/imgui-sys/" }
+#imgui-sys = { path = "../reframework/imgui-sys/" }
+#imgui-sys = { path = "../../imgui-rs/imgui-sys/" }
+#imgui = { path = "../../imgui-rs/imgui" }

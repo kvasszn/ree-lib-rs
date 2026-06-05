@@ -62,9 +62,14 @@ fn main() {
         .clang_arg("-Ithirdparty/cimgui")
         .clang_arg("-Ithirdparty/imgui")
         .clang_arg("-DIMGUI_ENABLE_FREETYPE")
+        .clang_arg("-DIMGUI_USE_WCHAR32")
         .clang_arg("-DIMGUI_ENABLE_STB_TRUETYPE=1")
         .clang_arg("-DIMGUI_USER_CONFIG=\"re2_imconfig.hpp\"")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()));
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .blocklist_type("ImVec2")
+        .blocklist_type("ImVec4")
+        .blocklist_type("ImVec2_Simple")
+        .blocklist_type("ImVec4_Simple");
 
     for path in &freetype_includes {
         builder = builder.clang_arg(format!("-I{}", path.display()));

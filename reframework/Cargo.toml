@@ -13,6 +13,7 @@ bindgen = "0.72.1"
 
 [dependencies]
 log = "0.4.30"
+chrono = "0.4.44"
 #ree-lib = { path = "../" }
 imgui-sys = { path = "./imgui-sys/" }
-chrono = "0.4.44"
+#imgui-sys = { path = "../../imgui-rs/imgui-sys/" }
