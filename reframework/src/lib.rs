@@ -1,4 +1,5 @@
 pub mod ref_log;
+pub mod regen;
 pub mod prelude;
 pub mod imgui;
 pub mod sdk;
@@ -372,3 +373,5 @@ pub fn log_error(msg: &str) {
         None => log_to_file!("[ERROR] {}", msg),
     }
 }
+
+

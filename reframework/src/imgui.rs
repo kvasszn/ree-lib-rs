@@ -319,12 +319,8 @@ pub fn push_id_int(int_id: i32) {
     unsafe { igPushID_Int(int_id) }
 }
 
-pub unsafe fn push_id_ptr(ptr_id: *const ::std::os::raw::c_void) -> Option<()> {
-    if ptr_id.is_null() {
-        return None;
-    }
+pub fn push_id_ptr(ptr_id: *const ::std::os::raw::c_void) {
     unsafe { igPushID_Ptr(ptr_id) };
-    Some(())
 }
 
 wrap_void! { pop_id => igPopID(); }
@@ -341,11 +337,8 @@ pub fn get_id_int(int_id: i32) -> ImGuiID {
     unsafe { igGetID_Int(int_id) }
 }
 
-pub unsafe fn get_id_ptr(ptr_id: *const ::std::os::raw::c_void) -> Option<ImGuiID> {
-    if ptr_id.is_null() {
-        return None
-    }
-    Some(unsafe { igGetID_Ptr(ptr_id) })
+pub fn get_id_ptr(ptr_id: *const ::std::os::raw::c_void) -> ImGuiID {
+    unsafe { igGetID_Ptr(ptr_id) }
 }
 
 // ── Text ──────────────────────────────────────────────────────────────────────
@@ -567,7 +560,7 @@ pub fn selectable_bool_ptr_str(label: &str, p_selected: &mut bool, flags: ImGuiS
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 
-// Safety: Make sure to check that buf ends with a null ptr
+// Safety: Make sure to check that buf ends with a null byte
 pub unsafe fn input_text(label: &CStr, buf: &mut [u8], flags: ImGuiInputTextFlags) -> bool {
     unsafe {
         igInputText(label.as_ptr(), buf.as_mut_ptr() as *mut i8, buf.len(), flags, None, std::ptr::null_mut())

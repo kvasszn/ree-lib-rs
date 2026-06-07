@@ -1,0 +1,15 @@
+[package]
+name = "codegen"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.102"
+clap = { version = "4.6.1", features = ["derive"] }
+env_logger = "0.11.10"
+log = "0.4.32"
+proc-macro2 = "1.0.106"
+quote = "1.0.45"
+ree-lib = { path = "../" }
+sonic-rs = "0.5.8"
+syn = "2.0.117"

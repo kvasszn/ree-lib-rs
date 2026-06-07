@@ -50,7 +50,7 @@ pub fn entry() -> Option<()> {
 
 pub fn foo() -> Option<()>{
     log::debug!("call foo");
-
+    let foo: Option<generated::snow::player::PlayerManager> = None;
     let res = reframework::on_imgui_draw_ui(Some(on_imgui_draw_ui));
     log::debug!("exit foo");
     Some(())
