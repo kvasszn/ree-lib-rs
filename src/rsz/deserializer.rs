@@ -33,27 +33,25 @@ macro_rules! match_rsz_types {
 pub struct RszDeserializer<'a, R: Read + Seek> {
     data: R,
     rsz_map: &'a RszMap,
-    info: &'a RszInfo,
 }
 
 impl<'a, R: Read + Seek> RszDeserializer<'a, R> {
-    pub fn from_rsz_info(data: R, info: &'a RszInfo, rsz_map: &'a RszMap) -> Self {
+    pub fn from_rsz_info(data: R, rsz_map: &'a RszMap) -> Self {
         Self {
             data,
             rsz_map,
-            info
         }
     }
 
-    pub fn deserialize(&mut self) -> Result<Rsz, DeserializeError> {
+    pub fn deserialize(&mut self, info: &'a RszInfo) -> Result<Rsz, DeserializeError> {
         let mut instances: Vec<Instance> = Vec::new();
         let mut externs = HashMap::new();
-        for (i, TypeDescriptor {hash, ..}) in self.info.type_descriptors.iter().enumerate() {
+        for (i, TypeDescriptor {hash, ..}) in info.type_descriptors.iter().enumerate() {
             let type_info = self.rsz_map.get_by_hash(*hash)
                 .ok_or(DeserializeError::HashNotFound(*hash))?;
             log::debug!("class: {}", type_info.name);
             
-            if let Some(extern_slot) = self.info.extern_slots.get(&(i as u32)) {
+            if let Some(extern_slot) = info.extern_slots.get(&(i as u32)) {
                 externs.insert(i as u32, Extern {
                     index: i as u32,
                     path: extern_slot.1.clone(),
@@ -71,14 +69,14 @@ impl<'a, R: Read + Seek> RszDeserializer<'a, R> {
             instances.push(Instance {hash: *hash, fields});
         }
         Ok(Rsz {
-            roots: self.info.roots.clone(),
+            roots: info.roots.clone(),
             instances,
             externs,
         })
     }
 
 
-    fn deserialize_field(&mut self, field: &FieldInfo, parent: &TypeInfo) -> Result<Value, DeserializeError> {
+    pub fn deserialize_field(&mut self, field: &FieldInfo, parent: &TypeInfo) -> Result<Value, DeserializeError> {
         let value = if field.array {
             seek_align_up(&mut self.data, 4)?;
             let len = self.data.read_u32::<LE>()?;

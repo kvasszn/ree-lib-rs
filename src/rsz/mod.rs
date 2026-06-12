@@ -25,8 +25,8 @@ pub struct Rsz {
 impl Rsz {
     pub fn read<R: Read + Seek>(r: &mut R, rsz_map: &RszMap) -> Result<Self> {
         let info = RszInfo::read(r)?;
-        let mut deserializer = RszDeserializer::from_rsz_info(r, &info, rsz_map);
-        let rsz = deserializer.deserialize()?;
+        let mut deserializer = RszDeserializer::from_rsz_info(r, rsz_map);
+        let rsz = deserializer.deserialize(&info)?;
         Ok(rsz)
     }
 }
