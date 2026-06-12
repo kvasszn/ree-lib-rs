@@ -3,6 +3,7 @@ pub mod error;
 pub mod rsz_type;
 pub mod deserializer;
 pub mod json_serializer;
+pub mod query;
 
 pub use map::*;
 
@@ -12,7 +13,7 @@ use bytemuck::{Pod, Zeroable};
 use serde::{Deserialize, Serialize};
 use half::f16;
 
-use crate::{enums::{EnumMap, EnumValue}, rsz::{deserializer::RszDeserializer, error::{Result, RszError}, rsz_type::RszType}, types::*, util::{read_pod, read_pod_vec}};
+use crate::{enums::{EnumMap}, rsz::{deserializer::RszDeserializer, error::{Result, RszError}, rsz_type::RszType}, types::*, util::{read_pod, read_pod_vec}};
 
 #[derive(Debug, Clone)]
 pub struct Rsz {
@@ -134,10 +135,8 @@ impl<'a> ValueView<'a> {
 
         let is_bit_type = base_name.ends_with("Bit");
 
-        if !is_bit_type {
-            if let Some(exact_name) = enum_def.get_name(value) {
-                return Some(exact_name.clone());
-            }
+        if !is_bit_type && let Some(exact_name) = enum_def.get_name(value) {
+            return Some(exact_name.clone());
         }
 
         let enum_val = value.as_u64();
@@ -154,14 +153,11 @@ impl<'a> ValueView<'a> {
         let mut flags = Vec::new();
         for i in 0..64 {
             let mask = 1u64 << i;
-            if (enum_val & mask) != 0 {
-                if let Some(bit_name) = enum_def.get_name(crate::enums::EnumValue::Unsigned(mask))
-                    .or_else(|| enum_def.get_name(crate::enums::EnumValue::Signed(mask as i64))) 
-                {
-                    if !flags.contains(bit_name) {
+            if (enum_val & mask) != 0
+                && let Some(bit_name) = enum_def.get_name(crate::enums::EnumValue::Unsigned(mask))
+                    .or_else(|| enum_def.get_name(crate::enums::EnumValue::Signed(mask as i64)))
+                    && !flags.contains(bit_name) {
                         flags.push(bit_name.clone());
-                    }
-                }
             }
         }
 
@@ -319,6 +315,30 @@ impl Value {
     pub fn as_mat4x4(&self) -> Option<&Mat4x4> { if let Value::Mat4x4(v) = self { Some(v.as_ref()) } else { None } }
     pub fn as_obb(&self)    -> Option<&OBB>    { if let Value::OBB(v) = self { Some(v.as_ref()) } else { None } }
     pub fn as_aabb(&self)   -> Option<&AABB>   { if let Value::AABB(v) = self { Some(v.as_ref()) } else { None } }
+
+    pub fn try_as_i64(&self) -> Option<i64> {
+        match self {
+            Value::S8(v) => Some(*v as i64),
+            Value::U8(v) => Some(*v as i64),
+            Value::S16(v) => Some(*v as i64),
+            Value::U16(v) => Some(*v as i64),
+            Value::S32(v) => Some(*v as i64),
+            Value::U32(v) => Some(*v as i64),
+            Value::S64(v) => Some(*v),
+            Value::U64(v) => Some(*v as i64),
+            _ => None,
+        }
+    }
+
+    pub fn loose_eq(&self, b: &Value) -> bool {
+        if self == b {
+            return true;
+        }
+        if let (Some(a_int), Some(b_int)) = (self.try_as_i64(), b.try_as_i64()) {
+            return a_int == b_int;
+        }
+        false
+    }
 }
 
 #[repr(C)]

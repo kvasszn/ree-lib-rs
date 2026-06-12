@@ -4,7 +4,7 @@ use serde::{Deserialize, Deserializer};
 
 use crate::util::*;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Default, Debug, Clone, Deserialize)]
 #[serde(transparent)]
 pub struct RszMap {
     #[serde(deserialize_with = "parse_hex_map")]
@@ -47,7 +47,7 @@ impl RszMap {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Default, Debug, Deserialize, Clone)]
 pub struct TypeInfo {
     #[serde(deserialize_with = "parse_address_u32")]
     pub crc: u32,
@@ -57,12 +57,20 @@ pub struct TypeInfo {
 }
 
 impl TypeInfo {
+    pub fn get_field_by_hash(&self, hash: u32) -> Option<&FieldInfo> {
+        self.fields.get(&hash)
+    }
+
+    pub fn get_field_idx_by_hash(&self, hash: u32) -> Option<usize> {
+        self.fields.get_index_of(&hash)
+    }
+
     pub fn get_field(&self, name: &str) -> Option<&FieldInfo> {
-        self.fields.get(&murmur3(name))
+        self.get_field_by_hash(murmur3(name))
     }
 
     pub fn get_field_idx(&self, name: &str) -> Option<usize> {
-        self.fields.get_index_of(&murmur3(name))
+        self.get_field_idx_by_hash(murmur3(name))
     }
 
     pub fn get_field_mut(&mut self, name: &str) -> Option<&mut FieldInfo> {
@@ -77,10 +85,9 @@ impl TypeInfo {
     pub fn get_by_index_mut(&mut self, index: usize) -> Option<&mut FieldInfo> {
         self.fields.get_index_mut(index).map(|(_hash, field)| field)
     }
-
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Default, Debug, Clone, Deserialize)]
 pub struct FieldInfo {
     pub align: u16,
     pub array: bool,

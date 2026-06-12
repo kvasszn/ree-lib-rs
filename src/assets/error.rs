@@ -9,14 +9,11 @@ pub enum FileReadError {
     #[error("Expected version {0}, found {1}")]
     InvalidVersion(u32, u32),
     #[error("Failed to parse Rsz {0}")]
-    RszError(RszError),
+    RszError(#[from] RszError),
     #[error("IO error {0}")]
     IO(#[from] std::io::Error),
-    #[error("RSZ parsing failed: {0}")]
-    Rsz(#[from] crate::rsz::error::RszError),
     #[error("Unknown File Type: {0}")]
     UnknownFileType(String),
 }
 
 pub type Result<T> = std::result::Result<T, FileReadError>;
-

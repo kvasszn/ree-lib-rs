@@ -1,27 +1,35 @@
 pub mod user;
+pub mod font;
 pub mod error;
 pub mod msg;
+pub mod bundle;
 
 use std::io::Cursor;
 
 pub use user::*;
 pub use msg::*;
+pub use font::*;
+
 use error::{FileReadError, Result};
 
-use crate::rsz::RszMap;
+use crate::{rsz::RszMap};
 
 pub enum GameAsset {
     User(UserFile),
     Msg(MsgFile),
+    Oft(Oft),
     Prefab
 }
 
+#[derive(Debug)]
 pub enum FileType {
     User,
     Msg,
+    Oft,
     Prefab,
     Mesh,
     Texture,
+    Pog,
     Unk
 }
 
@@ -29,13 +37,14 @@ impl FileType {
     pub fn get_file_type_from_path(path: &str) -> (Self, Option<u32>) {
         let mut ext = path.split('.').rev().peekable();
         let version = ext.peek().and_then(|e| e.parse::<u32>().ok());
-        while let Some(s) = ext.next() {
+        for s in ext {
             let t = match s {
                 "user" => Self::User,
                 "msg" => Self::Msg,
                 "pdb" => Self::Prefab,
                 "mesh" => Self::Mesh,
                 "tex" => Self::Texture,
+                "oft" => Self::Oft,
                 _ => continue
             };
             return (t, version);

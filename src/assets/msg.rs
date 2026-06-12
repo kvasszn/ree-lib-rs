@@ -1,23 +1,18 @@
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use bytemuck::{Pod, Zeroable};
 use byteorder::{LE, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 
+use crate::assets::error::{FileReadError, Result};
 use crate::language::Language;
 use crate::rsz::rsz_type::RszType;
-use crate::assets::error::{FileReadError, Result};
 use crate::types::{Guid, StringU16C};
+use crate::util::{read_pod, read_pod_vec};
 
 const KEY: [u8; 16] = [
     207, 206, 251, 248, 236, 10, 51, 102, 147, 169, 29, 147, 80, 57, 95, 9,
 ];
-
-pub struct MsgContext<'a, 'b> {
-    pub data_offset: u64,
-    pub lang_count: u32,
-    pub attr_count: u32,
-    pub cursor: &'a mut Cursor<&'b [u8]>,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MsgAttribute {
@@ -28,8 +23,8 @@ pub enum MsgAttribute {
 }
 
 impl MsgAttribute {
-    fn read<R: Read + Seek>(reader: &mut R) -> Result<Self> {
-        let attr = reader.read_u64::<LE>()?;
+    fn read<R: Read + Seek>(r: &mut R) -> Result<Self> {
+        let attr = r.read_u64::<LE>()?;
         Ok(Self::Int(attr as i64))
     }
 }
@@ -46,27 +41,32 @@ pub struct MsgEntry {
 }
 
 impl MsgEntry {
-    fn read<R: Read + Seek>(reader: &mut R, lang_count: usize, attr_count: usize, data_offset: usize) -> Result<Self> {
-        let guid: Guid = Guid::read_rsz(reader)?;
-        let unk = reader.read_u32::<LE>()?;
-        let hash = reader.read_u32::<LE>()?;
-        let name = StringU16C::read_rsz(reader)?.to_string();
-        let attributes_offset = reader.read_u64::<LE>()?;
+    fn read<R: Read + Seek>(
+        r: &mut R,
+        lang_count: usize,
+        attr_count: usize,
+    ) -> Result<Self> {
+        let guid: Guid = Guid::read_rsz(r)?;
+        let unk = r.read_u32::<LE>()?;
+        let hash = r.read_u32::<LE>()?;
+        let name_offset = r.read_u64::<LE>()?;
+        let attributes_offset = r.read_u64::<LE>()?;
+        let content_offsets = read_pod_vec::<u64, R>(r, lang_count)?;
 
-        let mut content = Vec::with_capacity(lang_count as usize);
-        for _ in 0..lang_count {
-            content.push(StringU16C::read_rsz(reader)?.as_string());
-        }
+        r.seek(SeekFrom::Start(name_offset))?;
+        let name = StringU16C::read_rsz(r)?.to_string();
 
-        let pos = reader.stream_position()?;
-        reader.seek(SeekFrom::Start(attributes_offset))?;
-
-        let mut attributes = Vec::with_capacity(attr_count as usize);
+        r.seek(SeekFrom::Start(attributes_offset))?;
+        let mut attributes = Vec::with_capacity(attr_count);
         for _ in 0..attr_count {
-            attributes.push(MsgAttribute::read(reader)?);
+            attributes.push(MsgAttribute::read(r)?);
         }
 
-        reader.seek(SeekFrom::Start(pos))?;
+        let mut content = Vec::with_capacity(lang_count);
+        for offset in content_offsets {
+            r.seek(SeekFrom::Start(offset))?;
+            content.push(StringU16C::read_rsz(r)?.as_string());
+        }
 
         Ok(MsgEntry {
             guid,
@@ -89,6 +89,23 @@ fn decrypt_msg_data(buf: &mut [u8]) {
     }
 }
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Pod, Zeroable)]
+pub struct MsgHeader {
+    pub version: u32,
+    pub magic: [u8; 4],
+    pub header_offset: u64,
+    pub entry_count: u32,
+    pub attr_count: u32,
+    pub lang_count: u32,
+    pub null: u32,
+    pub data_offset: u64,
+    pub p_offset: u64,
+    pub lang_offset: u64,
+    pub attr_type_offset: u64,
+    pub attr_type_name_offset: u64,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct MsgFile {
     pub version: u32,
@@ -101,73 +118,78 @@ pub struct MsgFile {
 
 impl MsgFile {
     pub fn read(data: &[u8]) -> super::error::Result<Self> {
-        let mut reader = Cursor::new(data);
-
-        let mut magic = [0u8; 4];
-        reader.read_exact(&mut magic)?;
+        let mut r = Cursor::new(data);
+        let header = read_pod(&mut r)?; 
+        let MsgHeader {
+            version,
+            magic,
+            header_offset,
+            entry_count,
+            attr_count,
+            lang_count,
+            null,
+            data_offset,
+            p_offset,
+            lang_offset,
+            attr_type_offset,
+            attr_type_name_offset,
+        } = header;
         if &magic != b"GMSG" {
-            return Err(FileReadError::InvalidMagic(*b"GMSG", magic))
-        }
-        let version = reader.read_u32::<LE>()?;
-        let _header_offset = reader.read_u64::<LE>()?;
-        let entry_count = reader.read_u32::<LE>()?;
-        let attr_count = reader.read_u32::<LE>()?;
-        let lang_count = reader.read_u32::<LE>()?;
-        let _null = reader.read_u32::<LE>()?;
-        let data_offset = reader.read_u64::<LE>()?;
-        let p_offset = reader.read_u64::<LE>()?;
-        let lang_offset = reader.read_u64::<LE>()?;
-        let attr_type_offset = reader.read_u64::<LE>()?;
-        let attr_type_name_offset = reader.read_u64::<LE>()?;
-
-        let mut entry_offsets = Vec::with_capacity(entry_count as usize);
-        for _ in 0..entry_count {
-            entry_offsets.push(reader.read_u64::<LE>()?);
+            return Err(FileReadError::InvalidMagic(*b"GMSG", magic));
         }
 
-        reader.seek(SeekFrom::Start(lang_offset))?;
-        let mut languages = Vec::with_capacity(lang_count as usize);
-        for _ in 0..lang_count {
-            languages.push(reader.read_u32::<LE>()?);
-        }
+        let entry_offsets = read_pod_vec::<u64, Cursor<&[u8]>>(&mut r, entry_count as usize)?;
 
-        reader.seek(SeekFrom::Start(p_offset))?;
-        let p = reader.read_u64::<LE>()?;
+        r.seek(SeekFrom::Start(lang_offset))?;
+        let languages = read_pod_vec::<u32, Cursor<&[u8]>>(&mut r, lang_count as usize)?;
 
-        reader.seek(SeekFrom::Start(attr_type_offset))?;
-        let mut attr_types = Vec::with_capacity(attr_count as usize);
-        for _ in 0..attr_count {
-            attr_types.push(reader.read_i32::<LE>()?);
-        }
+        r.seek(SeekFrom::Start(p_offset))?;
+        let p = r.read_u64::<LE>()?;
 
-        let mut data = reader.into_inner()[data_offset as usize..].to_vec();
-        decrypt_msg_data(&mut data);
+        r.seek(SeekFrom::Start(attr_type_offset))?;
+        let attr_types = read_pod_vec::<i32, Cursor<&[u8]>>(&mut r, attr_count as usize)?;
 
-        let mut reader = Cursor::new(data);
+        r.seek(SeekFrom::Start(attr_type_name_offset))?;
+        let attr_types_name_offsets = read_pod_vec::<u64, Cursor<&[u8]>>(&mut r, attr_count as usize)?;
 
-        reader.seek(SeekFrom::Start(attr_type_name_offset - data_offset))?;
+        let mut data = r.into_inner().to_vec();
+        decrypt_msg_data(&mut data[data_offset as usize..]);
+
+        let mut r = Cursor::new(data);
+
+        r.seek(SeekFrom::Start(attr_type_name_offset))?;
         let mut attr_names = Vec::with_capacity(attr_count as usize);
-        for _ in 0..attr_count {
-            attr_names.push(StringU16C::read_rsz(&mut reader)?.as_string());
+        for offset in attr_types_name_offsets {
+            r.seek(SeekFrom::Start(offset))?;
+            let s = StringU16C::read_rsz(&mut r)?.as_string();
+            attr_names.push(s);
         }
 
         let mut entries = Vec::with_capacity(entry_count as usize);
-        for offset in &entry_offsets {
-            reader.seek(SeekFrom::Start(*offset - data_offset))?;
-            entries.push(MsgEntry::read(&mut reader, lang_count as usize, attr_count as usize, data_offset as usize)?);
+        for offset in entry_offsets {
+            r.seek(SeekFrom::Start(offset))?;
+            entries.push(MsgEntry::read(
+                &mut r,
+                lang_count as usize,
+                attr_count as usize,
+            )?);
         }
 
         Ok(MsgFile {
-            version, languages, p, attr_types, attr_names, entries,
+            version,
+            languages,
+            p,
+            attr_types,
+            attr_names,
+            entries,
         })
     }
 
     pub fn get_entry<'a>(&'a self, guid: &'a Guid, language: Language) -> Option<&'a str> {
         if let Some(entry) = self.entries.iter().find(|e| e.guid.0 == guid.0) {
-            return entry.content.get(language as usize).map(|x| x.as_str())
+            return entry.content.get(language as usize).map(|x| x.as_str());
         }
-        log::debug!("Could not find entry for guid {}, {language:?}", guid.to_string());
+        log::debug!("Could not find entry for guid {}, {language:?}", guid);
         None
     }
 }
-

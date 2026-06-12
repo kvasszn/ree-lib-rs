@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::rsz::{FieldInfo, TypeInfo};
+use crate::rsz::{FieldInfo, TypeInfo, query::QueryError};
 
 
 #[derive(Error, Debug)]
@@ -8,7 +8,7 @@ pub enum DeserializeError {
     #[error("Hash {0:x} not found in type map")]
     HashNotFound(u32),
     #[error("Unhandled Field Type {} in {}.{}", .0.r#type, .1.name, .0.name)]
-    UnhandledFieldType(FieldInfo, TypeInfo),
+    UnhandledFieldType(Box<FieldInfo>, Box<TypeInfo>),
     #[error("Unknown or unsupported type {0}")]
     UnknownType(String),
     #[error("IO error: {0}")]
@@ -31,6 +31,8 @@ pub enum RszError {
     IO(#[from] std::io::Error),
     #[error("Deserialize error: {0}")]
     DeserializeError(#[from] DeserializeError),
+    #[error("Query error: {0}")]
+    QueryError(#[from] QueryError),
 }
 
 impl From<String> for RszError {

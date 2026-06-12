@@ -1,9 +1,12 @@
-use strum::EnumString;
+use strum::{EnumString, Display};
+use serde::{Serialize, Deserialize};
+use strum_macros::EnumIter;
 
 #[repr(usize)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
+#[derive(EnumIter, Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, EnumString, Display)]
 pub enum Language {
     Japanese = 0,
+    #[default]
     English = 1,
     French = 2,
     Italian = 3,

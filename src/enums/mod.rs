@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Result;
+use indexmap::IndexMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EnumValue {
@@ -28,8 +29,8 @@ impl EnumValue {
 
 #[derive(Debug, Clone, Default)]
 pub struct EnumDefinition{
-    pub name_to_value: HashMap<String, EnumValue>,
-    pub value_to_name: HashMap<EnumValue, String>,
+    pub name_to_value: IndexMap<String, EnumValue>,
+    pub value_to_name: IndexMap<EnumValue, String>,
 }
 
 impl EnumDefinition {

@@ -37,11 +37,11 @@ impl UserFile {
             magic,
             resource_count,
             child_count,
-            padding,
-            resource_list_offset,
-            child_list_offset,
-            rsz_offset,
-            rsz_offset_cap,
+            //resource_list_offset,
+            //child_list_offset,
+            //rsz_offset,
+            //rsz_offset_cap,
+            ..
         } = read_pod::<UserHeader, R>(r)?;
         if &magic != b"USR\0" {
             return Err(FileReadError::InvalidMagic(*b"USR\0", magic));
