@@ -1,5 +1,6 @@
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use bincode::{Decode, Encode};
 use bytemuck::{Pod, Zeroable};
 use byteorder::{LE, ReadBytesExt};
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ const KEY: [u8; 16] = [
     207, 206, 251, 248, 236, 10, 51, 102, 147, 169, 29, 147, 80, 57, 95, 9,
 ];
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Decode, Encode)]
 pub enum MsgAttribute {
     Int(i64),
     Float(f64),
@@ -29,7 +30,7 @@ impl MsgAttribute {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Decode, Encode)]
 pub struct MsgEntry {
     pub guid: Guid,
     pub unk: u32,
@@ -106,7 +107,7 @@ pub struct MsgHeader {
     pub attr_type_name_offset: u64,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Decode, Encode)]
 pub struct MsgFile {
     pub version: u32,
     pub languages: Vec<u32>,

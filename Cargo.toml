@@ -15,6 +15,7 @@ src = "src/bin/file_dumper.rs"
 
 [dependencies]
 anyhow = "1.0.102"
+bincode = "2"
 bytemuck = { version = "1.25.0", features = ["derive"] }
 byteorder = "1.5.0"
 env_logger = "0.11.10"

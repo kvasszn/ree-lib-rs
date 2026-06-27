@@ -6,6 +6,7 @@ pub mod bundle;
 
 use std::io::Cursor;
 
+use bincode::{Decode, Encode};
 pub use user::*;
 pub use msg::*;
 pub use font::*;
@@ -14,6 +15,7 @@ use error::{FileReadError, Result};
 
 use crate::{rsz::RszMap};
 
+#[derive(Decode, Encode)]
 pub enum GameAsset {
     User(UserFile),
     Msg(MsgFile),

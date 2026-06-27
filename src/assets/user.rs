@@ -1,5 +1,6 @@
 use std::io::{Cursor, Read, Seek};
 
+use bincode::{Decode, Encode};
 use bytemuck::{Pod, Zeroable};
 use serde::{Deserialize, Serialize};
 
@@ -18,13 +19,13 @@ pub struct UserHeader {
     rsz_offset_cap: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Decode, Encode)]
 pub struct UserChild {
     pub hash: u32,
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Decode, Encode)]
 pub struct UserFile {
     pub resource_names: Vec<String>,
     pub children: Vec<UserChild>,

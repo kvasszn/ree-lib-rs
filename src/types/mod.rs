@@ -1,6 +1,7 @@
 pub mod guid;
 pub mod strings;
 
+use bincode::{Decode, Encode};
 pub use guid::*;
 pub use strings::*;
 
@@ -11,7 +12,7 @@ use half::f16;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Decode, Encode)]
 pub struct Object {
     pub hash: u32,
     pub index: u32,
@@ -20,14 +21,14 @@ pub struct Object {
 pub type UserData = Object;
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Range {
     pub start: f32,
     pub end: f32,
 }
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct RangeI {
     pub start: i32,
     pub end: i32,
@@ -44,46 +45,46 @@ pub type Float3 = [f32; 3];
 pub type Float4 = [f32; 4];
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Vec2(pub f32, pub f32, pub f32, pub f32);
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq, Decode, Encode )]
 pub struct Vec3(pub f32, pub f32, pub f32, pub f32);
 
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Vec4(pub f32, pub f32, pub f32, pub f32);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Quaternion(f32, f32, f32, f32);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Sphere(f32, f32, f32, f32);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Position(f64, f64, f64);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Color(pub u8, pub u8, pub u8, pub u8);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Mat4x4(pub [f32; 16]);
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Decode, Encode)]
 pub struct RuntimeType(pub String);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct GameObjectRef(pub Guid);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct OBB {
     center: Vec3,
     half_extents: Vec3,
@@ -91,21 +92,21 @@ pub struct OBB {
 }
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct AABB(pub Vec4, pub Vec4);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct Rect {
     start: UInt2,
     end: UInt2,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Decode, Encode)]
 pub struct Data(pub Vec<u8>);
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, PartialEq, Decode, Encode)]
 pub struct KeyFrame{
     time: f32,
     val: [f32; 3],
@@ -152,7 +153,7 @@ pub struct AnimationCurve {
 
 
 #[repr(C)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Pod, Zeroable, Decode, Encode,)]
 pub struct Mandrake {
     pub v: i64,
     pub m: i64, // maybe change to NonZeroU64

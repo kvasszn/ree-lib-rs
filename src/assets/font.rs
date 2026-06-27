@@ -1,6 +1,9 @@
 use std::io::{Read, Seek};
+use bincode::{Decode, Encode};
+
 use crate::{assets::error::{FileReadError, Result}};
 
+#[derive(Decode, Encode)]
 pub struct Oft {
     pub data: Vec<u8>,
 }
@@ -34,7 +37,7 @@ impl Oft {
             }
         }
 
-        return Ok(Oft {
+        Ok(Oft {
             data
         })
     }

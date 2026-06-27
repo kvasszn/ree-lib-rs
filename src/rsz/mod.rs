@@ -5,6 +5,7 @@ pub mod deserializer;
 pub mod json_serializer;
 pub mod query;
 
+use bincode::{Decode, Encode};
 pub use map::*;
 
 use std::{collections::HashMap, io::{self, Read, Seek}};
@@ -15,7 +16,7 @@ use half::f16;
 
 use crate::{enums::{EnumMap}, rsz::{deserializer::RszDeserializer, error::{Result, RszError}, rsz_type::RszType}, types::*, util::{read_pod, read_pod_vec}};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Decode, Encode)]
 pub struct Rsz {
     pub roots: Vec<u32>,
     pub instances: Vec<Instance>,
@@ -31,7 +32,7 @@ impl Rsz {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Decode, Encode)]
 pub struct Instance {
     pub hash: u32,
     pub fields: Vec<Value>,
@@ -169,7 +170,7 @@ impl<'a> ValueView<'a> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Decode, Encode)]
 pub struct Extern {
     pub index: u32,
     pub r#type: String,
@@ -183,7 +184,7 @@ pub struct TypeDescriptor {
     pub crc: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Decode, Encode)]
 pub enum Value {
     Object(u32),
     Array(Vec<Value>),
@@ -199,7 +200,7 @@ pub enum Value {
     S32(i32),
     S64(i64),
     F8(u8),
-    F16(f16),
+    F16(f32),
     F32(f32),
     F64(f64),
     Size(u64),
@@ -253,7 +254,8 @@ impl Value {
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             Value::F8(v)  => Some(*v as f64),
-            Value::F16(v) => Some(v.to_f64()),
+            //Value::F16(v) => Some(v.to_f64()),
+            Value::F16(v) => Some(*v as f64),
             Value::F32(v) => Some(*v as f64),
             Value::F64(v) => Some(*v),
             _ => None,

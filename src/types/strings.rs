@@ -1,11 +1,12 @@
 use std::fmt;
 
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Decode, Encode)]
 pub struct StringU16(pub Vec<u16>);  // Length-prefixed
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Decode, Encode)]
 pub struct StringU16C(pub Vec<u16>); // Null-terminated
 
 macro_rules! impl_u16_string_basics {

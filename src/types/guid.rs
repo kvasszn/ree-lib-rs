@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use bytemuck::{Pod, Zeroable};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
@@ -5,7 +6,7 @@ use std::str::FromStr;
 use uuid::Uuid;
 
 #[repr(C)]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Pod, Zeroable, Decode, Encode)]
 pub struct Guid(pub [u8; 16]);
 
 impl Guid {

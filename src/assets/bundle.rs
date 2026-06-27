@@ -1,3 +1,4 @@
+use bincode::{Decode, Encode};
 use thiserror::Error;
 use std::collections::{HashMap, HashSet};
 
@@ -19,7 +20,7 @@ pub enum AssetError {
 pub type Result<T> = std::result::Result<T, AssetError>;
 
 // This is a storage container for assets and necessary data for reading from them
-#[derive(Default)]
+#[derive(Default, Encode, Decode)]
 pub struct Bundle {
     // path of the asset, the asset
     pub loaded: HashMap<String, GameAsset>,
