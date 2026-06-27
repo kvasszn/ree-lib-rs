@@ -4,8 +4,9 @@ use std::path::Path;
 
 use anyhow::Result;
 use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EnumValue {
     Signed(i64),
     Unsigned(u64),
@@ -14,7 +15,7 @@ pub enum EnumValue {
 impl EnumValue {
     pub fn as_u64(&self) -> u64 {
         match self {
-            EnumValue::Signed(v) => *v as u64, // Safely bit-casts the negative to u64
+            EnumValue::Signed(v) => *v as u64,
             EnumValue::Unsigned(v) => *v,
         }
     }
@@ -27,11 +28,33 @@ impl EnumValue {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct EnumDefinition{
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EnumDefinition {
     pub name_to_value: IndexMap<String, EnumValue>,
+    #[serde(with = "enum_value_map")]
     pub value_to_name: IndexMap<EnumValue, String>,
 }
+
+mod enum_value_map {
+    use super::EnumValue;
+    use indexmap::IndexMap;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(map: &IndexMap<EnumValue, String>, s: S) -> Result<S::Ok, S::Error>
+    where S: Serializer {
+        let pairs: Vec<(&EnumValue, &String)> = map.iter().collect();
+        pairs.serialize(s)
+    }
+
+    pub fn deserialize<'de, D>(d: D) -> Result<IndexMap<EnumValue, String>, D::Error>
+    where D: Deserializer<'de> {
+        let pairs = Vec::<(EnumValue, String)>::deserialize(d)?;
+        Ok(pairs.into_iter().collect())
+    }
+}
+
+pub type EnumMap = HashMap<String, EnumDefinition>;
+
 
 impl EnumDefinition {
     pub fn get_value(&self, name: &str) -> Option<EnumValue> {
@@ -59,7 +82,6 @@ impl EnumDefinition {
     }
 }
 
-pub type EnumMap = HashMap<String, EnumDefinition>;
 
 fn parse_enum_value(raw: Option<&str>, previous_value: Option<EnumValue>) -> Option<EnumValue> {
     let Some(raw) = raw else {
