@@ -106,6 +106,41 @@ impl Rsz {
         }
         cur_value
     }
+
+
+    pub fn get_from_value<'a>(&'a self, start_value: &'a Value, path: &str, rsz_map: &RszMap) -> Option<&'a Value> {
+        let query = Query::try_from(path).ok()?;
+
+        if query.query.is_empty() {
+            return None; 
+        }
+
+        let mut cur_value = Some(start_value);
+
+        for node in query.query.iter() {
+            match node {
+                QueryNode::Label(label) => {
+                    let obj_id = match cur_value {
+                        Some(Value::Object(id)) => *id,
+                        _ => return None,
+                    };
+
+                    let current_instance = self.instances.get(obj_id as usize)?;
+                    let type_info = rsz_map.get_by_hash(current_instance.hash)?; 
+                    let field_index = type_info.get_field_idx(label)?;
+                    cur_value = Some(current_instance.fields.get(field_index)?);
+                }
+                QueryNode::Index(index) => {
+                    match cur_value {
+                        Some(Value::Array(array)) => cur_value = Some(array.get(*index)?),
+                        _ => return None,
+                    };
+                }
+            }
+        }
+
+        cur_value
+    }
 }
 
 /*

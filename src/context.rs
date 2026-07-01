@@ -37,13 +37,9 @@ impl<'a> EngineContext<'a> {
         };
 
         for item in array {
-            if let Value::Object(obj_id) = item {
-                let instance = rsz.instances.get(*obj_id as usize)?;
-                let type_info = self.rsz_map.get_by_hash(instance.hash)?;
-                if let Some(field_idx) = type_info.get_field_idx(match_field)
-                    && let Some(field_val) = instance.fields.get(field_idx)
-                        && field_val.loose_eq(match_value) {
-                            return Some(item);
+            if let Some(field_val) = rsz.get_from_value(item, match_field, self.rsz_map) {
+                if field_val.loose_eq(match_value) {
+                    return Some(item);
                 }
             }
         }
